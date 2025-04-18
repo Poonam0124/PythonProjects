@@ -1,0 +1,66 @@
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+if 'expense' not in st.session_state:
+    st.session_state['expense'] = pd.DataFrame(
+        columns=['Date', 'Category', 'Amount', 'Description'])
+
+
+def load_expenses():
+    uploaded_file = st.file_uploader("Choose a file", type="csv")
+    if uploaded_file is not None:
+        st.session_state['expense'] = pd.read_csv(uploaded_file)
+        st.success('Expenses loaded successfully!')
+
+
+def save_expenses():
+    st.session_state['expense'].to_csv('expenses.csv', index=False)
+    st.success('Expenses saved successfully!')
+
+
+def visualize_expenses():
+    if not st.session_state['expense'].empty:
+        fig, ax = plt.subplots()
+        sns.barplot(data=st.session_state['expense'],
+                    x='Category',
+                    y='Amount',
+                    ax=ax)
+        plt.xticks(rotation=45)
+        st.pyplot(fig)
+    else:
+        st.warning('No expenses to visualize.')
+
+
+st.title('Expense Tracker')
+with st.sidebar:
+    st.header('Add Expense')
+    date = st.date_input('Date')
+    category = st.selectbox(
+        'Category',
+        ['Food', 'Transportation', 'Entertainment', 'Utilities', 'Other'])
+    amount = st.number_input('Amount', min_value=0.0, format="%.2f")
+    description = st.text_input('Description')
+
+    if st.button('Add Expense'):
+        new_expense = pd.DataFrame({
+            'Date': [date],
+            'Category': [category],
+            'Amount': [amount],
+            'Description': [description]
+        })
+        st.session_state['expense'] = pd.concat(
+            [st.session_state['expense'], new_expense], ignore_index=True)
+
+        st.success('Expense added successfully!')
+    st.header('OPERATIONS')
+    if st.button('Save Expenses'):
+        save_expenses()
+    if st.button('Load Expenses'):
+        load_expenses()
+st.header('Expenses')
+st.write(st.session_state['expense'])
+st.header('Visualizations')
+if st.button('Show Visualizations'):
+    visualize_expenses()
